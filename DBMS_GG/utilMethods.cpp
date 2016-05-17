@@ -48,3 +48,14 @@ int costFunc(int R1, int R2)
 	double cost = R1 * R2 * (rand()%300) /300;
 	return (int) cost;
 }
+
+void printResult(int *table, int last_node){
+	int i = last_node;
+	int node_size = countSetBits(i);
+	while (node_size > 1){
+		printf(" %d x \n", table[i * 3 + 1]);
+		i = table[i * 3 + 2];
+		node_size = countSetBits(i);
+	}
+	printf(" %d \n", i);
+}

@@ -22,7 +22,7 @@ __device__ int gpuBitCount(unsigned int n){
 __global__ void subSetKernel(int *table, int *sets, int size){
 
 	if (threadIdx.x == 0){
-
+		__syncthreads();
 	}
 	else if(threadIdx.x < size +1){
 		int setS, subS1, subS2, cost2;
@@ -45,7 +45,6 @@ __global__ void subSetKernel(int *table, int *sets, int size){
 				//for intiiale run intiate the set values
 				int c1 = table[subS1 * 3];
 				int c2 = table[subS2 * 3];
-				printf("Cost for %d is %d, and for %d is %d \n", subS1, c1, subS2, c2);
 				if (first_run){
 					table[setS * 3] = costFuncGPU(c1, c2);
 					  table[setS * 3 + 1] = subS1;
@@ -64,7 +63,6 @@ __global__ void subSetKernel(int *table, int *sets, int size){
 			subS1 = setS & (subS1 - setS);
 		}
 
-		printf("Best_Cost is %d for %d \n", table[setS*3], setS);
 	}
 	__syncthreads();
 }
@@ -73,7 +71,7 @@ cudaError_t runOnGpu();
 
 int main(){
 
-	int input = 0x0F;
+	int input = 0xF;
 	int input_count = countSetBits(input);
 
 	//input tables
@@ -84,21 +82,20 @@ int main(){
 	//double sql_sel[5] = { 0.01, 0.34, 0.55, 0.28, 0.88 };
 	int bitNumber = countSetBits(input);
 	int dp_table_size = 3 * (int)pow(2.0, bitNumber );
-	printf("INPUT NUMBER  = %d, dp size = %d \n", bitNumber, dp_table_size);
-	//int* dp_table = new int[dp_table_size];
-	int dp_table[DP_SIZE];
+	int* dp_table = new int[dp_table_size];
+
 	// [SIZE ][CHILD_1 ][CHILD_2];
 
 	cudaError_t cudaStatus;
 	// Allocate GPU buffer
 	int *dev_sel;
-	 int*dev_table;
+	int *dev_table;
 	cudaStatus = cudaMalloc((void**)&dev_sel, 5 * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaMalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMalloc((void**)&dev_table, dp_table_size);
+	cudaStatus = cudaMalloc((void**)&dev_table, dp_table_size*sizeof(int));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaMalloc failed!");
 		goto Error;
@@ -106,11 +103,9 @@ int main(){
 	//Levels enumeration
 	int mask = 0x01;
 	int currBitSet, coeff, bitSet, table;
-	printf("BITNUMBER: %d \n", bitNumber);
 	for (int j = 1; j <= bitNumber; j++) {
 		bitSet = mask;
 		currBitSet = countSetBits(bitSet);
-		printf("\n LVL IS : %d \n", j);
 		//setting up the first level = importing the initale tables caridnality
 		if (currBitSet == 1){
 			table = getTableIndex(currBitSet);
@@ -138,23 +133,39 @@ int main(){
 				all_sets[i + 1] = bitSet;
 			};
 			//enumerating subsets on CPU/GPU -> resolving occupancy problem
-			if (coeff > 400){
-//running the subset enumaration on GPU
+			if (coeff < 1000){
+					//running the subset enumaration on GPU
 				int *dev_sets;
-//Allocating needed memory 
-				cudaMalloc((void**)&dev_sets, coeff*sizeof(int));
-				cudaMemcpy(dev_sets, all_sets, coeff*sizeof(int), cudaMemcpyHostToDevice);
-				cudaMemcpy(dev_table, dp_table, DP_SIZE*sizeof(int), cudaMemcpyHostToDevice);
-//Launching the kernel
+					//Allocating needed memory 
+				cudaStatus = cudaMalloc((void**)&dev_sets, coeff*sizeof(int));
+				if (cudaStatus != cudaSuccess) {
+					fprintf(stderr, "cudaMalloc failed!");
+					goto Error;
+				}
+				cudaStatus = cudaMemcpy(dev_sets, all_sets, coeff*sizeof(int), cudaMemcpyHostToDevice);
+				if (cudaStatus != cudaSuccess) {
+					fprintf(stderr, "cudaCopy_in_sets failed!");
+					goto Error;
+				}
+				cudaStatus = cudaMemcpy(dev_table, dp_table, dp_table_size*sizeof(int), cudaMemcpyHostToDevice);
+				if (cudaStatus != cudaSuccess) {
+					fprintf(stderr, "cudaCopy_in_table failed!");
+					goto Error;
+				}
+					//Launching the kernel
 				subSetKernel <<<1, coeff+1>>>(dev_table, dev_sets, coeff);
-//Copying back to host
-				cudaMemcpy(dp_table, dev_table, DP_SIZE*sizeof(int), cudaMemcpyDeviceToHost);
-//Freeing cuda allocatade mem
+					//Copying back to host
+				cudaStatus = cudaMemcpy(dp_table, dev_table, dp_table_size*sizeof(int), cudaMemcpyDeviceToHost);
+				if (cudaStatus != cudaSuccess) {
+					fprintf(stderr, "cudaCopy_ou_table failed!");
+					goto Error;
+				}
+					//Freeing cuda allocatade mem
 				cudaFree(dev_sets);
 
 			}
 			else {
-				//running the subset enumaration on CPU
+					//running the subset enumaration on CPU
 				getSubSets(dp_table, all_sets, coeff);
 			}
 			delete[] all_sets;
@@ -164,6 +175,8 @@ int main(){
 		mask = mask + 1;
 	}
 	cudaFree(dev_table);
+	
+	/*
 	for (int l = 1; l < input; l++){
 		if (countSetBits(l) == 1){
 			printf("TABLE is %d \n", dp_table[l * 3]);
@@ -172,6 +185,8 @@ int main(){
 			printf("TABLE is %d and %d \n", dp_table[l * 3 + 1], dp_table[l * 3 + 2]);
 		}
 	}
+	*/
+	printResult(dp_table, input);
 
 Error:
 	return cudaStatus;
