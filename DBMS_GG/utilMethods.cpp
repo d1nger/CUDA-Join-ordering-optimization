@@ -50,10 +50,11 @@ int costFunc(int R1, int R2)
 }
 
 void printResult(int *table, int last_node){
+	printf("Best join Right-Deep-Tree is : \n");
 	int i = last_node;
 	int node_size = countSetBits(i);
 	while (node_size > 1){
-		printf(" %d x \n", table[i * 3 + 1]);
+		printf(" %d x ", table[i * 3 + 1]);
 		i = table[i * 3 + 2];
 		node_size = countSetBits(i);
 	}

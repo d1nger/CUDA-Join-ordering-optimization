@@ -71,7 +71,7 @@ cudaError_t runOnGpu();
 
 int main(){
 
-	int input = 0xF;
+	int input = 0x0FFF;
 	int input_count = countSetBits(input);
 
 	//input tables
@@ -132,9 +132,10 @@ int main(){
 				bitSet = next_set_of_n_elements(bitSet);
 				all_sets[i + 1] = bitSet;
 			};
-			//enumerating subsets on CPU/GPU -> resolving occupancy problem
-			if (coeff < 1000){
-					//running the subset enumaration on GPU
+			printf("Binom Coefficient is: %d ->", coeff);
+			if (coeff > 400){
+				printf(" GPU run \n");
+				//enumerating subsets on CPU/GPU -> occupancy 
 				int *dev_sets;
 					//Allocating needed memory 
 				cudaStatus = cudaMalloc((void**)&dev_sets, coeff*sizeof(int));
@@ -162,9 +163,9 @@ int main(){
 				}
 					//Freeing cuda allocatade mem
 				cudaFree(dev_sets);
-
 			}
 			else {
+				printf(" CPU run\n");
 					//running the subset enumaration on CPU
 				getSubSets(dp_table, all_sets, coeff);
 			}
@@ -175,22 +176,15 @@ int main(){
 		mask = mask + 1;
 	}
 	cudaFree(dev_table);
-	
-	/*
-	for (int l = 1; l < input; l++){
-		if (countSetBits(l) == 1){
-			printf("TABLE is %d \n", dp_table[l * 3]);
-		}
-		else{
-			printf("TABLE is %d and %d \n", dp_table[l * 3 + 1], dp_table[l * 3 + 2]);
-		}
-	}
-	*/
+	cudaFree(dev_sel);
+
 	printResult(dp_table, input);
 
 Error:
+	cudaFree(dev_table);
+	cudaFree(dev_table);
+	cudaFree(dev_sel);
 	return cudaStatus;
 }
-
 
 cudaError_t runOnGpu();
