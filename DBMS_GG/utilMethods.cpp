@@ -1,8 +1,7 @@
 #include "utilMethods.h"
 #include "binMethod.h"
-#include <stdlib.h>     /* srand, rand */
-#include <stdio.h>
-void getSubSets(int* table, int* sets, int size){
+
+void getSubSets(unsigned short int* table, int* sets, int size){
 	int setS, subS1, subS2, cost2;
 	int bitS, bitS2;
 	bool first_run;
@@ -49,7 +48,7 @@ int costFunc(int R1, int R2)
 	return (int) cost;
 }
 
-void printResult(int *table, int last_node){
+void printResult(unsigned short int *table, int last_node){
 	printf("Best join Right-Deep-Tree is : \n");
 	int i = last_node;
 	int node_size = countSetBits(i);

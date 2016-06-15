@@ -1,5 +1,9 @@
 #pragma once
-	
-void getSubSets(int* table, int* sets, int size);
+#include <stdlib.h>     /* srand, rand */
+#include <stdio.h>
+#include <Windows.h>
+#include <iostream>
+
+void getSubSets(unsigned short int* table, int* sets, int size);
 int costFunc(int R1, int R2);
-void printResult(int *table, int last_node);
+void printResult(unsigned short int *table, int last_node);

@@ -152,10 +152,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="gpuMethods.cu" />
+    <CudaCompile Include="kernelMethods.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="binMethod.h" />
     <ClInclude Include="gpuMethods.cuh" />
+    <ClInclude Include="kernelMethods.cuh" />
     <ClInclude Include="utilMethods.h" />
   </ItemGroup>
   <ItemGroup>
